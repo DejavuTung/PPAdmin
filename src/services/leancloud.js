@@ -9,6 +9,14 @@ const LEANCLOUD_CONFIG = {
   appUrl: getConfig().LEANCLOUD_APP_URL
 }
 
+// LeanCloud日期格式化辅助函数
+const formatDateForLeanCloud = (date) => {
+  return {
+    '__type': 'Date',
+    'iso': date.toISOString()
+  }
+}
+
 // 创建axios实例
 const api = axios.create({
   baseURL: `${LEANCLOUD_CONFIG.appUrl}/1.1`,
@@ -108,7 +116,7 @@ export const leancloudService = {
       const response = await masterApi.post('/classes/TestConnection', {
         message: 'Hello LeanCloud from Admin Dashboard!',
         timestamp: Date.now(),
-        createdAt: new Date().toISOString()
+        createdAt: formatDateForLeanCloud(new Date())
       })
       
       if (response.objectId) {
