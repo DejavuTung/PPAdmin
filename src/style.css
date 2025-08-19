@@ -1,0 +1,59 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+}
+
+#app {
+  height: 100vh;
+}
+
+.el-header {
+  background-color: #409EFF;
+  color: white;
+  line-height: 60px;
+}
+
+.el-aside {
+  background-color: #304156;
+  color: white;
+}
+
+.el-main {
+  background-color: #f0f2f5;
+  padding: 20px;
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.login-form {
+  width: 400px;
+  padding: 40px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-card {
+  margin-bottom: 20px;
+}
+
+.statistics-row {
+  margin-bottom: 20px;
+}
+
+.chart-container {
+  height: 400px;
+  margin-top: 20px;
+}
