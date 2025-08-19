@@ -123,6 +123,44 @@ api.interceptors.response.use(
   }
 )
 
+// 为masterApi添加请求拦截器
+masterApi.interceptors.request.use(
+  (config) => {
+    // 调试：打印masterApi请求信息
+    console.log('MasterApi 请求详情:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      headers: {
+        'X-LC-Id': config.headers['X-LC-Id'],
+        'X-LC-Key': config.headers['X-LC-Key'] ? `${config.headers['X-LC-Key'].substring(0, 8)}...` : '未设置',
+        'Content-Type': config.headers['Content-Type']
+      }
+    })
+    
+    // 调试：打印请求体数据
+    if (config.data) {
+      console.log('MasterApi 请求体数据:', config.data)
+      try {
+        const parsedData = JSON.parse(config.data)
+        console.log('MasterApi 解析后的请求体:', parsedData)
+        if (parsedData.createdAt) {
+          console.log('MasterApi createdAt字段类型:', typeof parsedData.createdAt)
+          console.log('MasterApi createdAt字段值:', parsedData.createdAt)
+        }
+      } catch (e) {
+        console.log('MasterApi 请求体不是JSON格式')
+      }
+    }
+    
+    return config
+  },
+  (error) => {
+    console.error('MasterApi 请求拦截器错误:', error)
+    return Promise.reject(error)
+  }
+)
+
 // LeanCloud API服务
 export const leancloudService = {
   // 测试连接
@@ -130,29 +168,43 @@ export const leancloudService = {
     try {
       console.log('开始测试LeanCloud连接...')
       
-      // 调试：打印日期格式
-      const testDate = formatDateForLeanCloud(new Date())
-      console.log('测试日期格式:', testDate)
-      console.log('测试日期类型:', typeof testDate.createdAt)
-      
-      const requestData = {
+      // 先测试简单连接，不使用日期字段
+      console.log('测试1: 简单连接测试...')
+      const simpleResponse = await masterApi.post('/classes/TestConnection', {
         message: 'Hello LeanCloud from Admin Dashboard!',
-        timestamp: Date.now(),
-        createdAt: testDate
-      }
+        timestamp: Date.now()
+      })
       
-      console.log('完整请求数据:', requestData)
-      
-      const response = await masterApi.post('/classes/TestConnection', requestData)
-      
-      if (response.objectId) {
+      if (simpleResponse.objectId) {
+        console.log('简单连接测试成功，ObjectId:', simpleResponse.objectId)
+        
         // 清理测试数据
-        await masterApi.delete(`/classes/TestConnection/${response.objectId}`)
+        await masterApi.delete(`/classes/TestConnection/${simpleResponse.objectId}`)
         return { success: true, message: '连接测试成功' }
       }
+      
       return { success: false, error: '连接测试失败' }
     } catch (error) {
       console.error('连接测试失败:', error)
+      
+      // 如果是日期格式错误，尝试不带日期的测试
+      if (error.response?.data?.error && error.response.data.error.includes('createdAt')) {
+        console.log('检测到日期格式错误，尝试不带日期的测试...')
+        try {
+          const fallbackResponse = await masterApi.post('/classes/TestConnection', {
+            message: 'Hello LeanCloud from Admin Dashboard!',
+            timestamp: Date.now()
+          })
+          
+          if (fallbackResponse.objectId) {
+            await masterApi.delete(`/classes/TestConnection/${fallbackResponse.objectId}`)
+            return { success: true, message: '连接测试成功（无日期字段）' }
+          }
+        } catch (fallbackError) {
+          console.error('备用测试也失败:', fallbackError)
+        }
+      }
+      
       return { 
         success: false, 
         error: error.response?.data?.error || error.message || '连接测试失败'
