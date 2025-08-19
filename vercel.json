@@ -12,11 +12,5 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "env": {
-    "VITE_LEANCLOUD_APP_ID": "@vite_leancloud_app_id",
-    "VITE_LEANCLOUD_APP_KEY": "@vite_leancloud_app_key",
-    "VITE_LEANCLOUD_MASTER_KEY": "@vite_leancloud_master_key",
-    "VITE_LEANCLOUD_APP_URL": "@vite_leancloud_app_url"
-  }
+  ]
 }
