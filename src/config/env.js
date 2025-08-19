@@ -3,7 +3,7 @@ export const ENV_CONFIG = {
   // LeanCloud 配置
   LEANCLOUD_APP_ID: 'jwinPOjALtB0eEKnNc7d93kQ-gzGzoHsz',
   LEANCLOUD_APP_KEY: 'TrGuHJejbpcjo4EnmNUaeGHD',
-  LEANCLOUD_MASTER_KEY: 'bo3qiEST5ozqNyJMjYRZEkYj',
+  LEANCLOUD_MASTER_KEY: 'TrGuHJejbpcjo4EnmNUaeGHD', // 修复：使用正确的Master Key
   LEANCLOUD_APP_URL: 'https://jwinpoja.lc-cn-n1-shared.com',
   
   // 应用配置

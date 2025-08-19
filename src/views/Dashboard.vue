@@ -1,10 +1,23 @@
 <template>
   <Layout>
     <div>
+      <!-- 页面标题和刷新按钮 -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>数据概览</h2>
+        <div>
+          <el-button type="primary" @click="refreshData" :loading="loading" icon="Refresh">
+            刷新数据
+          </el-button>
+          <el-button type="info" @click="testConnection" :loading="testingConnection" icon="Connection">
+            测试连接
+          </el-button>
+        </div>
+      </div>
+
       <!-- 统计卡片 -->
       <el-row :gutter="20" class="statistics-row">
         <el-col :span="6">
-          <el-card class="dashboard-card">
+          <el-card class="dashboard-card" :body-style="{ padding: '20px' }">
             <div style="display: flex; align-items: center;">
               <el-icon style="font-size: 48px; color: #409EFF; margin-right: 20px;">
                 <User />
@@ -20,7 +33,7 @@
         </el-col>
         
         <el-col :span="6">
-          <el-card class="dashboard-card">
+          <el-card class="dashboard-card" :body-style="{ padding: '20px' }">
             <div style="display: flex; align-items: center;">
               <el-icon style="font-size: 48px; color: #67C23A; margin-right: 20px;">
                 <Food />
@@ -36,7 +49,7 @@
         </el-col>
         
         <el-col :span="6">
-          <el-card class="dashboard-card">
+          <el-card class="dashboard-card" :body-style="{ padding: '20px' }">
             <div style="display: flex; align-items: center;">
               <el-icon style="font-size: 48px; color: #E6A23C; margin-right: 20px;">
                 <Bicycle />
@@ -52,14 +65,14 @@
         </el-col>
         
         <el-col :span="6">
-          <el-card class="dashboard-card">
+          <el-card class="dashboard-card" :body-style="{ padding: '20px' }">
             <div style="display: flex; align-items: center;">
               <el-icon style="font-size: 48px; color: #F56C6C; margin-right: 20px;">
                 <TrendCharts />
               </el-icon>
               <div>
                 <div style="font-size: 24px; font-weight: bold; color: #303133;">
-                  {{ statistics.totalFoodEntries }}
+                  {{ statistics.totalExerciseRecords || 0 }}
                 </div>
                 <div style="color: #909399; margin-top: 5px;">运动记录</div>
               </div>
@@ -69,7 +82,7 @@
       </el-row>
       
       <!-- 最近用户 -->
-      <el-row :gutter="20">
+      <el-row :gutter="20" style="margin-top: 20px;">
         <el-col :span="12">
           <el-card class="dashboard-card">
             <template #header>
@@ -79,16 +92,32 @@
               </div>
             </template>
             
-            <div v-if="statistics.recentUsers.length > 0">
-              <div v-for="user in statistics.recentUsers" :key="user.objectId" style="padding: 10px 0; border-bottom: 1px solid #EBEEF5;">
+            <div v-if="loading" style="text-align: center; padding: 20px;">
+              <el-icon class="is-loading" style="font-size: 24px;"><Loading /></el-icon>
+              <div style="margin-top: 10px;">加载中...</div>
+            </div>
+            
+            <div v-else-if="statistics.recentUsers.length > 0">
+              <div v-for="user in statistics.recentUsers" :key="user.objectId" style="padding: 15px 0; border-bottom: 1px solid #EBEEF5;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div>
-                    <div style="font-weight: bold;">{{ user.name || '未设置姓名' }}</div>
-                    <div style="color: #909399; font-size: 12px;">
+                  <div style="flex: 1;">
+                    <div style="font-weight: bold; font-size: 16px;">{{ user.name || '未设置姓名' }}</div>
+                    <div style="color: #909399; font-size: 12px; margin-top: 5px;">
+                      性别: {{ formatGender(user.gender) }} | 年龄: {{ calculateAge(user.birthday) }}岁
+                    </div>
+                    <div style="color: #909399; font-size: 12px; margin-top: 2px;">
+                      身高: {{ user.height }}cm | 体重: {{ user.weight }}kg
+                    </div>
+                    <div style="color: #909399; font-size: 12px; margin-top: 2px;">
                       注册时间: {{ formatDate(user.createdAt) }}
                     </div>
                   </div>
-                  <el-tag size="small" type="success">活跃</el-tag>
+                  <div style="margin-left: 15px;">
+                    <el-tag size="small" type="success">{{ user.activityLevel || '未知' }}</el-tag>
+                    <div style="margin-top: 5px;">
+                      <el-tag size="small" type="warning">{{ user.goalType || '未知' }}</el-tag>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -107,16 +136,26 @@
               </div>
             </template>
             
-            <div v-if="statistics.recentNutrition.length > 0">
-              <div v-for="record in statistics.recentNutrition" :key="record.objectId" style="padding: 10px 0; border-bottom: 1px solid #EBEEF5;">
+            <div v-if="loading" style="text-align: center; padding: 20px;">
+              <el-icon class="is-loading" style="font-size: 24px;"><Loading /></el-icon>
+              <div style="margin-top: 10px;">加载中...</div>
+            </div>
+            
+            <div v-else-if="statistics.recentNutrition.length > 0">
+              <div v-for="record in statistics.recentNutrition" :key="record.objectId" style="padding: 15px 0; border-bottom: 1px solid #EBEEF5;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div>
-                    <div style="font-weight: bold;">{{ record.totalCalories || 0 }} 卡路里</div>
-                    <div style="color: #909399; font-size: 12px;">
+                  <div style="flex: 1;">
+                    <div style="font-weight: bold; font-size: 16px;">{{ record.totalCalories || 0 }} 卡路里</div>
+                    <div style="color: #909399; font-size: 12px; margin-top: 5px;">
+                      蛋白质: {{ record.totalProtein || 0 }}g | 碳水: {{ record.totalCarb || 0 }}g | 脂肪: {{ record.totalFat || 0 }}g
+                    </div>
+                    <div style="color: #909399; font-size: 12px; margin-top: 2px;">
                       日期: {{ formatDate(record.date) }}
                     </div>
                   </div>
-                  <el-tag size="small" type="warning">营养</el-tag>
+                  <div style="margin-left: 15px;">
+                    <el-tag size="small" type="warning">营养</el-tag>
+                  </div>
                 </div>
               </div>
             </div>
@@ -171,15 +210,6 @@
                   </div>
                 </el-button>
               </el-col>
-              
-              <el-col :span="6">
-                <el-button type="warning" @click="testConnection" style="width: 100%; height: 80px;">
-                  <div>
-                    <el-icon style="font-size: 24px; margin-bottom: 10px;"><Connection /></el-icon>
-                    <div>测试连接</div>
-                  </div>
-                </el-button>
-              </el-col>
             </el-row>
           </el-card>
         </el-col>
@@ -199,7 +229,8 @@ import {
   Bicycle, 
   TrendCharts, 
   Refresh, 
-  Connection 
+  Connection,
+  Loading
 } from '@element-plus/icons-vue'
 
 const statistics = ref({
@@ -207,16 +238,38 @@ const statistics = ref({
   totalNutritionRecords: 0,
   totalFoodEntries: 0,
   recentUsers: [],
-  recentNutrition: []
+  recentNutrition: [],
+  totalExerciseRecords: 0
 })
 
 const loading = ref(false)
+const testingConnection = ref(false)
 
 // 格式化日期
 const formatDate = (dateStr) => {
   if (!dateStr) return '未知'
   const date = new Date(dateStr)
   return date.toLocaleDateString('zh-CN')
+}
+
+// 格式化性别
+const formatGender = (gender) => {
+  if (gender === 'male') return '男'
+  if (gender === 'female') return '女'
+  return '未知'
+}
+
+// 计算年龄
+const calculateAge = (birthday) => {
+  if (!birthday) return '未知'
+  const birthDate = new Date(birthday)
+  const today = new Date()
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDiff = today.getMonth() - birthDate.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return age
 }
 
 // 获取统计数据
@@ -241,6 +294,7 @@ const refreshData = () => {
 
 // 测试连接
 const testConnection = async () => {
+  testingConnection.value = true
   try {
     const result = await leancloudService.testConnection()
     if (result.success) {
@@ -252,6 +306,8 @@ const testConnection = async () => {
   } catch (error) {
     ElMessage.error(`连接测试异常: ${error.message}`)
     console.error('连接测试异常:', error)
+  } finally {
+    testingConnection.value = false
   }
 }
 

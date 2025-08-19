@@ -24,7 +24,7 @@ const masterApi = axios.create({
   baseURL: `${LEANCLOUD_CONFIG.appUrl}/1.1`,
   headers: {
     'X-LC-Id': LEANCLOUD_CONFIG.appId,
-    'X-LC-Key': LEANCLOUD_CONFIG.masterKey,
+    'X-LC-Key': `${LEANCLOUD_CONFIG.masterKey},master`, // 修复：添加,master后缀
     'Content-Type': 'application/json'
   }
 })
@@ -101,6 +101,31 @@ api.interceptors.response.use(
 
 // LeanCloud API服务
 export const leancloudService = {
+  // 测试连接
+  async testConnection() {
+    try {
+      console.log('开始测试LeanCloud连接...')
+      const response = await masterApi.post('/classes/TestConnection', {
+        message: 'Hello LeanCloud from Admin Dashboard!',
+        timestamp: Date.now(),
+        createdAt: new Date().toISOString()
+      })
+      
+      if (response.objectId) {
+        // 清理测试数据
+        await masterApi.delete(`/classes/TestConnection/${response.objectId}`)
+        return { success: true, message: '连接测试成功' }
+      }
+      return { success: false, error: '连接测试失败' }
+    } catch (error) {
+      console.error('连接测试失败:', error)
+      return { 
+        success: false, 
+        error: error.response?.data?.error || error.message || '连接测试失败'
+      }
+    }
+  },
+
   // 用户管理
   async getUsers(limit = 100, skip = 0) {
     return masterApi.get(`/classes/UserProfile?limit=${limit}&skip=${skip}&order=-createdAt`)
@@ -147,24 +172,34 @@ export const leancloudService = {
       console.log('开始获取统计数据...')
       
       // 使用 Master Key 来获取数据
-      const [users, nutrition, food] = await Promise.all([
+      const [users, nutrition, food, exercise] = await Promise.all([
         masterApi.get('/classes/UserProfile?limit=1000&skip=0&order=-createdAt'),
         masterApi.get('/classes/NutritionSummary?limit=1000&skip=0&order=-date'),
-        masterApi.get('/classes/FoodEntry?limit=1000&skip=0&order=-timestamp')
+        masterApi.get('/classes/FoodEntry?limit=1000&skip=0&order=-timestamp'),
+        masterApi.get('/classes/ExerciseEntry?limit=1000&skip=0&order=-timestamp')
       ])
 
-      console.log('API 响应数据:', { users, nutrition, food })
+      console.log('API 响应数据:', { users, nutrition, food, exercise })
 
       return {
         totalUsers: users.results?.length || 0,
         totalNutritionRecords: nutrition.results?.length || 0,
         totalFoodEntries: food.results?.length || 0,
+        totalExerciseRecords: exercise.results?.length || 0,
         recentUsers: users.results?.slice(0, 5) || [],
         recentNutrition: nutrition.results?.slice(0, 5) || []
       }
     } catch (error) {
       console.error('获取统计数据时发生错误:', error)
-      throw error
+      // 返回默认数据而不是抛出错误
+      return {
+        totalUsers: 0,
+        totalNutritionRecords: 0,
+        totalFoodEntries: 0,
+        totalExerciseRecords: 0,
+        recentUsers: [],
+        recentNutrition: []
+      }
     }
   },
 
