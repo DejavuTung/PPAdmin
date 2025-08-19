@@ -168,46 +168,70 @@ export const leancloudService = {
     try {
       console.log('开始测试LeanCloud连接...')
       
-      // 先测试简单连接，不使用日期字段
-      console.log('测试1: 简单连接测试...')
-      const simpleResponse = await masterApi.post('/classes/TestConnection', {
-        message: 'Hello LeanCloud from Admin Dashboard!',
-        timestamp: Date.now()
-      })
-      
-      if (simpleResponse.objectId) {
-        console.log('简单连接测试成功，ObjectId:', simpleResponse.objectId)
+      // 测试1: 尝试最简单的连接测试
+      console.log('测试1: 最简单的连接测试...')
+      try {
+        const simpleResponse = await masterApi.post('/classes/TestConnection', {
+          message: 'Hello LeanCloud from Admin Dashboard!'
+        })
         
-        // 清理测试数据
-        await masterApi.delete(`/classes/TestConnection/${simpleResponse.objectId}`)
-        return { success: true, message: '连接测试成功' }
+        if (simpleResponse.objectId) {
+          console.log('最简单连接测试成功，ObjectId:', simpleResponse.objectId)
+          await masterApi.delete(`/classes/TestConnection/${simpleResponse.objectId}`)
+          return { success: true, message: '连接测试成功' }
+        }
+      } catch (simpleError) {
+        console.log('最简单测试失败:', simpleError.response?.data)
       }
       
-      return { success: false, error: '连接测试失败' }
+      // 测试2: 尝试使用不同的表名
+      console.log('测试2: 尝试使用不同的表名...')
+      try {
+        const tableTestResponse = await masterApi.post('/classes/ConnectionTest', {
+          message: 'Hello LeanCloud from Admin Dashboard!',
+          timestamp: Date.now()
+        })
+        
+        if (tableTestResponse.objectId) {
+          console.log('表名测试成功，ObjectId:', tableTestResponse.objectId)
+          await masterApi.delete(`/classes/ConnectionTest/${tableTestResponse.objectId}`)
+          return { success: true, message: '连接测试成功（使用ConnectionTest表）' }
+        }
+      } catch (tableError) {
+        console.log('表名测试失败:', tableError.response?.data)
+      }
+      
+      // 测试3: 尝试读取现有数据
+      console.log('测试3: 尝试读取现有数据...')
+      try {
+        const readResponse = await masterApi.get('/classes/UserProfile?limit=1')
+        console.log('读取测试成功:', readResponse)
+        return { success: true, message: '连接测试成功（可读取数据）' }
+      } catch (readError) {
+        console.log('读取测试失败:', readError.response?.data)
+      }
+      
+      return { success: false, error: '所有连接测试都失败' }
     } catch (error) {
       console.error('连接测试失败:', error)
       
-      // 如果是日期格式错误，尝试不带日期的测试
-      if (error.response?.data?.error && error.response.data.error.includes('createdAt')) {
-        console.log('检测到日期格式错误，尝试不带日期的测试...')
-        try {
-          const fallbackResponse = await masterApi.post('/classes/TestConnection', {
-            message: 'Hello LeanCloud from Admin Dashboard!',
-            timestamp: Date.now()
-          })
-          
-          if (fallbackResponse.objectId) {
-            await masterApi.delete(`/classes/TestConnection/${fallbackResponse.objectId}`)
-            return { success: true, message: '连接测试成功（无日期字段）' }
-          }
-        } catch (fallbackError) {
-          console.error('备用测试也失败:', fallbackError)
-        }
+      // 显示详细的错误信息
+      if (error.response) {
+        console.error('错误响应状态:', error.response.status)
+        console.error('错误响应数据:', error.response.data)
+        console.error('错误响应头:', error.response.headers)
       }
+      
+      // 返回详细的错误信息
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          '连接测试失败'
       
       return { 
         success: false, 
-        error: error.response?.data?.error || error.message || '连接测试失败'
+        error: `HTTP ${error.response?.status || '未知'}: ${errorMessage}`,
+        details: error.response?.data
       }
     }
   },
