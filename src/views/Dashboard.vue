@@ -3,7 +3,7 @@
     <div>
       <!-- 页面标题和刷新按钮 -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2>数据概览1</h2>
+        <h2>数据概览</h2>
         <div>
           <el-button type="primary" @click="refreshData" :loading="loading" icon="Refresh">
             刷新数据
