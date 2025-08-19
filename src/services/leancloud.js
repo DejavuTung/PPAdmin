@@ -68,6 +68,22 @@ api.interceptors.request.use(
         'Content-Type': config.headers['Content-Type']
       }
     })
+    
+    // 调试：打印请求体数据
+    if (config.data) {
+      console.log('请求体数据:', config.data)
+      try {
+        const parsedData = JSON.parse(config.data)
+        console.log('解析后的请求体:', parsedData)
+        if (parsedData.createdAt) {
+          console.log('createdAt字段类型:', typeof parsedData.createdAt)
+          console.log('createdAt字段值:', parsedData.createdAt)
+        }
+      } catch (e) {
+        console.log('请求体不是JSON格式')
+      }
+    }
+    
     return config
   },
   (error) => {
@@ -113,11 +129,21 @@ export const leancloudService = {
   async testConnection() {
     try {
       console.log('开始测试LeanCloud连接...')
-      const response = await masterApi.post('/classes/TestConnection', {
+      
+      // 调试：打印日期格式
+      const testDate = formatDateForLeanCloud(new Date())
+      console.log('测试日期格式:', testDate)
+      console.log('测试日期类型:', typeof testDate.createdAt)
+      
+      const requestData = {
         message: 'Hello LeanCloud from Admin Dashboard!',
         timestamp: Date.now(),
-        createdAt: formatDateForLeanCloud(new Date())
-      })
+        createdAt: testDate
+      }
+      
+      console.log('完整请求数据:', requestData)
+      
+      const response = await masterApi.post('/classes/TestConnection', requestData)
       
       if (response.objectId) {
         // 清理测试数据
